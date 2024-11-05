@@ -4,16 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Hash;
-use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use App\Models\Customer;
 use Illuminate\Support\Facades\Validator;
 
-class AuthController extends Controller
+class CustomerAuthController extends Controller
 {
     public function register(Request $request){
         $validator = Validator::make($request->all(),[
-            'name'=>'string:255|required',
-            'email'=>'required|max:255|unique:users',
+            'name'=>'string:50|required',
+            'email'=>'required|max:50|unique:customers',
             'password'=>'required|confirmed|max:12|min:8|string',
         ]);
         if($validator->fails()){
@@ -21,34 +21,33 @@ class AuthController extends Controller
             return response()->json(['status'=>false,'message'=>'Validation error!','errors'=>$errorMessage],200);
         }
 
-        $user = User::create([
+        $customer = Customer::create([
             'name'=>$request->name,
             'email'=>$request->email,
             'password'=>Hash::make($request->password)
         ]);
 
-        $token = $user->createToken($request->name);
-
-        return response()->json(['status'=>true,'message'=>'User added successfully!','token'=>$token->plainTextToken],200);
+        $token = $customer->createToken($request->name);
+        return response()->json(['status'=>true,'message'=>'Cusomer added successfully!','token'=>$token->plainTextToken,'name'=>$request->name],200);
     }
 
     public function login(Request $request){
         $validator = Validator::make($request->all(),[
-            'email'=>'required|max:255|exists:users',
+            'email'=>'required|max:50|exists:customers',
             'password'=>'required|max:12|min:8|string',
         ]);
         if($validator->fails()){
             $errorMessage = $validator->errors()->first();
             return response()->json(['status'=>false,'message'=>'Validation error!','errors'=>$errorMessage],200);
         }
-        
-        $user = User::where('email',$request->email)->first();
-        if(!$user || !Hash::check($request->password, $user->password)){
-            return response()->json(['status'=>'false','message'=>'Your credentials are not match!'],500);
+
+        $customer = Customer::where('email',$request->email)->first();
+        if(!$customer || !Hash::check($request->password, $customer->password)){
+            return response()->json(['status'=>false,'message'=>'Unauthorize','errors'=>'Your credentials are not match!'],500);
         }
 
-        $token = $user->createToken($user->name);
-        return response()->json(['status'=>true,'message'=>'Login successfully!','token'=>$token->plainTextToken,'name'=>$user->name],200);
+        $token = $customer->createToken($customer->name);
+        return response()->json(['status'=>true,'message'=>'Cusomer login successfully!','token'=>$token->plainTextToken,'name'=>$customer->name],200);
     }
 
     public function logout(Request $request){
